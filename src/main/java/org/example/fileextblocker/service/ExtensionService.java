@@ -72,9 +72,9 @@ public class ExtensionService {
     }
 
     @Transactional
-    public void deleteCustom(String extRaw) {
+    public void deleteCustomIdempotent(String extRaw) {
         String ext = normalize(extRaw);
-        repo.deleteByExtAndType(ext, ExtensionType.CUSTOM);
+        repo.deleteByExtAndType(ext, ExtensionType.CUSTOM); // 0건이어도 OK
     }
 
     public String normalize(String raw) {
@@ -103,8 +103,9 @@ public class ExtensionService {
     }
 
     @Transactional
-    public void deleteFixed(String extRaw) {
+    public void deleteFixedIdempotent(String extRaw) {
         String ext = normalize(extRaw);
+
         repo.deleteByExtAndType(ext, ExtensionType.FIXED);
     }
 

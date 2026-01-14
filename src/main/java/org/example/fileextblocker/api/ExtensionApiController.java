@@ -37,7 +37,7 @@ public class ExtensionApiController {
 
     @DeleteMapping("/custom/{ext}")
     public ResponseEntity<Void> deleteCustom(@PathVariable String ext) {
-        service.deleteCustom(ext);
+        service.deleteCustomIdempotent(ext);
         return ResponseEntity.noContent().build();
     }
 
@@ -49,7 +49,7 @@ public class ExtensionApiController {
 
     @DeleteMapping("/fixed/{ext}")
     public ResponseEntity<Void> deleteFixed(@PathVariable String ext) {
-        service.deleteFixed(ext);
+        service.deleteFixedIdempotent(ext);
         return ResponseEntity.noContent().build();
     }
     @PatchMapping("/custom/{ext}/promote")

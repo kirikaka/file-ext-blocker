@@ -28,16 +28,6 @@
 - 페이지 최초 로딩 시 서버 렌더링으로 고정/커스텀 목록을 표시합니다.
 - 이후 체크/추가/삭제는 `fetch`로 API를 호출하고, 성공 시 목록을 재조회하여 화면을 갱신합니다.
 
-## API 명세
-- `GET /api/extensions`
-    - 고정 확장자 목록(checked 여부 포함) + 커스텀 확장자 목록 반환
-- `PUT /api/extensions/fixed/{ext}`
-    - body: `{ "blocked": true | false }`
-- `POST /api/extensions/custom`
-    - body: `{ "ext": "sh" }`
-- `DELETE /api/extensions/custom/{ext}`
-
-에러 응답은 `{ "message": "..." }` 형태로 통일합니다.
 
 ## 데이터 정책 (정규화/제약)
 - 정규화: `.SH ` → `sh` (trim/lowercase/앞 점 제거)

@@ -12,6 +12,7 @@ async function api(path, options = {}) {
         } catch (_) {}
         throw new Error(msg);
     }
+
     return res.status === 204 ? null : res.json().catch(() => null);
 }
 
@@ -29,61 +30,119 @@ function isLettersOnly(s) {
 const customInput = document.getElementById("customInput");
 const addBtn = document.getElementById("addBtn");
 
+// (선택) 고정 추가 입력이 있는 경우만
+const fixedInput = document.getElementById("fixedInput");
+const addFixedBtn = document.getElementById("addFixedBtn");
+
+// 커스텀 입력: 영문자 + '.'만 남기고 필터
 customInput?.addEventListener("input", () => {
-    // '.'는 맨 앞에 한 번만 허용(사용자가 ".sh"처럼 넣는 케이스)
     let v = customInput.value;
+    v = v.replace(/[^a-zA-Z.]/g, "");
 
-    // 영문자와 '.' 외 제거 (붙여넣기/한글 등)
-    v = v.replace(/[^a-zA-Z.]/g, ""); // replace 패턴은 흔히 이런 입력 필터에 사용 [web:346]
-
-    // '.'가 여러 개면 첫 글자 '.'만 남기고 제거
     const firstDot = v.indexOf(".");
-    if (firstDot > 0) {
-        // '.'가 맨 앞이 아닌데 등장하면 제거 (예: "s.h" -> "sh")
-        v = v.replaceAll(".", "");
-    } else if (firstDot === 0) {
-        // 맨 앞 '.'는 남기되 나머지 '.' 제거
-        v = "." + v.slice(1).replaceAll(".", "");
-    }
+    if (firstDot > 0) v = v.replaceAll(".", "");
+    else if (firstDot === 0) v = "." + v.slice(1).replaceAll(".", "");
 
     if (v !== customInput.value) customInput.value = v;
 });
 
-async function reloadTags() {
-    const data = await api("/api/extensions");
+// (선택) 고정 입력도 영문자만 필터
+fixedInput?.addEventListener("input", () => {
+    fixedInput.value = fixedInput.value.replace(/[^a-zA-Z.]/g, "");
+});
 
+function renderFixed(fixedList) {
+    const fixedArea = document.getElementById("fixedArea");
+    if (!fixedArea) return;
+
+    fixedArea.innerHTML = "";
+
+    fixedList.forEach(fx => {
+        const row = document.createElement("div");
+        row.className = "fixed-item";
+
+        const label = document.createElement("label");
+        label.className = "fixed-label";
+
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = !!fx.blocked;
+        cb.dataset.kind = "fixed-toggle";
+        cb.dataset.ext = fx.ext;
+
+        const span = document.createElement("span");
+        span.textContent = fx.ext;
+
+        const del = document.createElement("button");
+        del.type = "button";
+        del.className = "x";
+        del.textContent = "X";
+        del.dataset.kind = "fixed-delete";
+        del.dataset.ext = fx.ext;
+
+        label.appendChild(cb);
+        label.appendChild(span);
+
+        row.appendChild(label);
+        row.appendChild(del);
+
+        fixedArea.appendChild(row);
+    });
+}
+
+function renderCustom(customList) {
     const tags = document.getElementById("customTags");
     const count = document.getElementById("countText");
+    if (!tags || !count) return;
 
     tags.innerHTML = "";
 
-    data.custom.forEach(ext => {
+    customList.forEach(ext => {
         const tag = document.createElement("div");
         tag.className = "tag";
 
         const span = document.createElement("span");
-        span.textContent = ext; // innerHTML 대신 textContent로 안전하게 출력
+        span.textContent = ext;
 
-        const btn = document.createElement("button");
-        btn.className = "x";
-        btn.type = "button";
-        btn.dataset.ext = ext;
-        btn.textContent = "X";
+        const promote = document.createElement("button");
+        promote.className = "promote";
+        promote.type = "button";
+        promote.dataset.ext = ext;
+        promote.dataset.kind = "custom-promote";
+        promote.textContent = "고정";
+
+        const del = document.createElement("button");
+        del.className = "x";
+        del.type = "button";
+        del.dataset.ext = ext;
+        del.dataset.kind = "custom-delete";
+        del.textContent = "X";
 
         tag.appendChild(span);
-        tag.appendChild(btn);
+        tag.appendChild(promote);
+        tag.appendChild(del);
+
         tags.appendChild(tag);
     });
 
-    count.textContent = `${data.custom.length}/200`;
-    addBtn.disabled = data.custom.length >= 200;
+    count.textContent = `${customList.length}/200`;
+    addBtn.disabled = customList.length >= 200;
 }
 
+async function reloadAll() {
+    const data = await api("/api/extensions");
+    renderFixed(data.fixed);
+    renderCustom(data.custom);
+}
+
+// change: 고정 체크 토글
 document.addEventListener("change", async (e) => {
     const el = e.target;
-    if (el.matches("input[type=checkbox][data-ext]")) {
-        const ext = el.getAttribute("data-ext");
+
+    if (el.matches("input[type=checkbox][data-kind='fixed-toggle']")) {
+        const ext = el.dataset.ext;
         const next = el.checked;
+
         try {
             await api(`/api/extensions/fixed/${encodeURIComponent(ext)}`, {
                 method: "PUT",
@@ -91,14 +150,16 @@ document.addEventListener("change", async (e) => {
             });
         } catch (err) {
             alert(err.message);
-            el.checked = !next; // rollback
+            el.checked = !next;
         }
     }
 });
 
+// click: 추가/삭제/승격
 document.addEventListener("click", async (e) => {
     const el = e.target;
 
+    // 커스텀 추가
     if (el.id === "addBtn") {
         const ext = normalizeExt(customInput.value);
 
@@ -112,18 +173,42 @@ document.addEventListener("click", async (e) => {
                 body: JSON.stringify({ ext })
             });
             customInput.value = "";
-            await reloadTags();
+            await reloadAll();
         } catch (err) {
-            // 서버에서: "고정 확장자에 존재" / "이미 존재" 메시지 그대로 표시
             alert(err.message);
         }
     }
 
-    if (el.matches("button.x[data-ext]")) {
+    // 커스텀 삭제
+    if (el.matches("button[data-kind='custom-delete']")) {
         const ext = el.dataset.ext;
         try {
             await api(`/api/extensions/custom/${encodeURIComponent(ext)}`, { method: "DELETE" });
-            await reloadTags();
+            await reloadAll();
+        } catch (err) {
+            alert(err.message);
+        }
+    }
+
+    // 커스텀 -> 고정 승격
+    if (el.matches("button[data-kind='custom-promote']")) {
+        const ext = el.dataset.ext;
+        try {
+            await api(`/api/extensions/custom/${encodeURIComponent(ext)}/promote`, { method: "PATCH" });
+            await reloadAll();
+        } catch (err) {
+            alert(err.message);
+        }
+    }
+
+    // 고정 삭제 (X)
+    if (el.matches("button[data-kind='fixed-delete']")) {
+        const ext = el.dataset.ext;
+        if (!confirm(`고정 확장자 '${ext}'를 삭제할까요?`)) return;
+
+        try {
+            await api(`/api/extensions/fixed/${encodeURIComponent(ext)}`, { method: "DELETE" });
+            await reloadAll();
         } catch (err) {
             alert(err.message);
         }
@@ -133,6 +218,9 @@ document.addEventListener("click", async (e) => {
 customInput?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") addBtn.click();
 });
+fixedInput?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") addFixedBtn?.click();
+});
 
-// 최초 렌더 후 동기화(필요 시)
-reloadTags().catch(() => {});
+// 최초 로딩
+reloadAll().catch(() => {});

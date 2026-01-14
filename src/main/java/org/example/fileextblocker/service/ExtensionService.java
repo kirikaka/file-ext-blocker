@@ -83,4 +83,49 @@ public class ExtensionService {
         if (s.startsWith(".")) s = s.substring(1);
         return s;
     }
+    @Transactional
+    public void addFixed(String extRaw) {
+        String ext = normalize(extRaw);
+
+        if (ext.isBlank()) throw new IllegalArgumentException("확장자를 입력하세요.");
+        if (ext.length() > 20) throw new IllegalArgumentException("확장자는 최대 20자입니다.");
+        if (!ext.matches("^[a-z]+$")) throw new IllegalArgumentException("확장자는 영문자만 입력 가능합니다.");
+
+        var existing = repo.findByExt(ext);
+        if (existing.isPresent()) {
+            if (existing.get().getType() == ExtensionType.CUSTOM) {
+                throw new IllegalStateException("이미 커스텀 확장자로 존재합니다.");
+            }
+            throw new IllegalStateException("이미 고정 확장자로 존재합니다.");
+        }
+
+        repo.save(BlockedExtension.fixed(ext, false)); // 고정 확장자 default uncheck 유지 [file:1]
+    }
+
+    @Transactional
+    public void deleteFixed(String extRaw) {
+        String ext = normalize(extRaw);
+        repo.deleteByExtAndType(ext, ExtensionType.FIXED);
+    }
+
+    @Transactional
+    public void promoteCustomToFixed(String extRaw) {
+        String ext = normalize(extRaw);
+
+        var e = repo.findByExt(ext).orElseThrow(() ->
+                new IllegalArgumentException("존재하지 않는 확장자입니다.")
+        );
+
+        if (e.getType() == ExtensionType.FIXED) {
+            throw new IllegalStateException("이미 고정 확장자입니다.");
+        }
+
+        // CUSTOM -> FIXED 승격
+        e.setType(ExtensionType.FIXED);
+        e.setBlocked(false);
+        repo.save(e);
+    }
+
+
+
 }

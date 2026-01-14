@@ -40,4 +40,23 @@ public class ExtensionApiController {
         service.deleteCustom(ext);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/fixed")
+    public ResponseEntity<Void> addFixed(@Valid @RequestBody Requests.AddCustomRequest req) {
+        service.addFixed(req.ext());
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/fixed/{ext}")
+    public ResponseEntity<Void> deleteFixed(@PathVariable String ext) {
+        service.deleteFixed(ext);
+        return ResponseEntity.noContent().build();
+    }
+    @PatchMapping("/custom/{ext}/promote")
+    public ResponseEntity<Void> promoteCustomToFixed(@PathVariable String ext) {
+        service.promoteCustomToFixed(ext);
+        return ResponseEntity.noContent().build();
+    }
+
+
 }

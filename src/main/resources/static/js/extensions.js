@@ -53,8 +53,6 @@ fixedInput?.addEventListener("input", () => {
 
 function renderFixed(fixedList) {
     const fixedArea = document.getElementById("fixedArea");
-    if (!fixedArea) return;
-
     fixedArea.innerHTML = "";
 
     fixedList.forEach(fx => {
@@ -67,28 +65,29 @@ function renderFixed(fixedList) {
         const cb = document.createElement("input");
         cb.type = "checkbox";
         cb.checked = !!fx.blocked;
-        cb.dataset.kind = "fixed-toggle";
         cb.dataset.ext = fx.ext;
+        cb.dataset.kind = "fixed-toggle";
 
         const span = document.createElement("span");
         span.textContent = fx.ext;
 
+        // 고정 삭제 X 버튼(원하면)
         const del = document.createElement("button");
         del.type = "button";
         del.className = "x";
         del.textContent = "X";
-        del.dataset.kind = "fixed-delete";
         del.dataset.ext = fx.ext;
+        del.dataset.kind = "fixed-delete";
 
         label.appendChild(cb);
         label.appendChild(span);
-
         row.appendChild(label);
         row.appendChild(del);
 
         fixedArea.appendChild(row);
     });
 }
+
 
 function renderCustom(customList) {
     const tags = document.getElementById("customTags");
@@ -132,7 +131,7 @@ function renderCustom(customList) {
 async function reloadAll() {
     const data = await api("/api/extensions");
     renderFixed(data.fixed);
-    renderCustom(data.custom);
+    renderCustom(data.custom); // 너가 만든 커스텀 렌더 함수
 }
 
 // change: 고정 체크 토글
@@ -191,11 +190,11 @@ document.addEventListener("click", async (e) => {
     }
 
     // 커스텀 -> 고정 승격
-    if (el.matches("button[data-kind='custom-promote']")) {
+    if (el.matches("button.promote[data-kind='custom-promote']")) {
         const ext = el.dataset.ext;
         try {
             await api(`/api/extensions/custom/${encodeURIComponent(ext)}/promote`, { method: "PATCH" });
-            await reloadAll();
+            await reloadAll(); // 이게 핵심: 고정 섹션까지 갱신
         } catch (err) {
             alert(err.message);
         }

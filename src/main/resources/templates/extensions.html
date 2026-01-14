@@ -36,7 +36,8 @@
         <div id="customTags" class="tags">
             <div class="tag" th:each="ext : ${custom}">
                 <span th:text="${ext}"></span>
-                <button class="x" th:attr="data-ext=${ext}" type="button">X</button>
+                <button class="promote" th:attr="data-ext=${ext}" data-kind="custom-promote" type="button">고정</button>
+                <button class="x" th:attr="data-ext=${ext}" data-kind="custom-delete" type="button">X</button>
             </div>
         </div>
     </section>

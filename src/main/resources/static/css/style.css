@@ -16,4 +16,4 @@ button:disabled { background:#999; cursor:not-allowed; }
 .fixed-item { display:flex; align-items:center; gap:10px; }
 .fixed-label { display:flex; align-items:center; gap:6px; }
 .fixed-item .x { border:0; background:transparent; cursor:pointer; color:#333; }
-.tag .promote { border:0; background:transparent; cursor:pointer; color:#333; font-size:14px; padding:0 2px; }
+.tag .promote{ border:0; background:#fafafa; color:#333; font-size:12px; font-weight:600; padding:6px 10px; border-radius:10px; cursor:pointer; line-height:1;}

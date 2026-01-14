@@ -54,6 +54,11 @@ public class ExtensionService {
         if (ext.isBlank()) throw new IllegalArgumentException("확장자를 입력하세요.");
         if (ext.length() > MAX_EXT_LEN) throw new IllegalArgumentException("확장자는 최대 20자입니다.");
 
+        if (!ext.matches("^[a-z]+$")) { // normalize 후라면 소문자만 허용해도 됨
+            throw new IllegalArgumentException("커스텀 확장자는 영문자만 입력 가능합니다.");
+        }
+
+
         if (repo.existsByExt(ext)) {
             throw new IllegalStateException("이미 존재하는 확장자입니다.");
         }
